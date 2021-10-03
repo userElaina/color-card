@@ -44,7 +44,6 @@ def f(pth:str,mx:int=2,resize:tuple=None)->list:
 	ans=list()
 	for c,i in enumerate(a):
 		if i[3]:
-			print(c,i)
 			for k in range(3):
 				i[k]=_div(i[k],i[3])+_c2head(c,k)+_mid
 			ans.append((i[3],i[2]<<16|i[1]<<8|i[0]))
