@@ -164,7 +164,7 @@ public:
 		fprintf(f,"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n\t\t<title>\n\t\t\tColor Card\n\t\t</title>\n\t</head>\n\t<style>\n\t\tbody{\n\t\t\tbackground-image:url(\"%s\");\n\t\t\tbackground-size:100%s auto;\n\t\t}\n\t</style>\n\t<body style=\"font-family:Consolas;text-align:center;\"><h1>Color Card</h1>\n",s.c_str(),"%");
 		for(int w=0;w<8;w++){
 			if(num[w][0]<=limit)continue;
-			fprintf(f,"\t\t<p>\n\t\t\t<div style=\"font-size:24px;font-width:bold;\">Level %d</div>\n",w+1);
+			fprintf(f,"\t\t<p>\n\t\t\t<div style=\"font-size:24px;font-weight:bold;\">Level %d</div>\n",w+1);
 			for(int i=0;i<need;i++){
 				if(num[w][i]<=limit)break;
 				fprintf(f,"\t\t\t<div style=\"color:#%06X;background-color:#%06X;\">#%06X&nbsp;",col[w][i]^0x808080,col[w][i],col[w][i]);
