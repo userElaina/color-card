@@ -27,6 +27,10 @@ int LOG=0xffffff;
 #define ERR_SIZE_2 (-14)
 #define ERR_SIZE_3 (-15)
 
+#define ERR_INPUT_SIZE_1 (-17)
+
+inline void err(int code){printf("Error code: %d",code);exit(0);}
+
 class Rbmp24bits{
 private:
 	B*p;
@@ -51,13 +55,13 @@ private:
 		if(int4()^0x28)return ERR_NOT_24BIT_1;
 		// head 2 size 0x36 bits
 
-		weight=int4();hight=int4();
-		int weight3=weight+(weight<<1);
-		size=weight3*hight;
-		int mo=weight&3;
-		int weight3mo=weight3+mo;
+		width=int4();height=int4();
+		int width3=width+(width<<1);
+		size=width3*height;
+		int mo=width&3;
+		int width3mo=width3+mo;
 
-		if(full_size^(weight3mo*hight+0x36))return ERR_NOT_24BIT_2;
+		if(full_size^(width3mo*height+0x36))return ERR_NOT_24BIT_2;
 		// 4B
 
 		if(int4()^0x180001)return ERR_OTHER_DATA_2;
@@ -74,8 +78,8 @@ private:
 		if(int4())return ERR_OTHER_DATA_3;
 		// const 0x000000
 
-		for(int i=0;i<hight;i++){
-			if(fread(o+i*weight3,1,weight3,f)^weight3)return ERR_SIZE_2;
+		for(int i=0;i<height;i++){
+			if(fread(o+i*width3,1,width3,f)^width3)return ERR_SIZE_2;
 			if(fread(head,1,mo,f)^mo)return ERR_SIZE_2;
 		}
 
@@ -86,11 +90,10 @@ private:
 	}
 	inline B nc(){return *p++;}
 	inline int int4(){return nc()|nc()<<8|nc()<<16|nc()<<24;}
-	inline void err(int code){printf("Error code: %d",code);exit(0);}
 
 public:
 	B o[100000000];
-	int size,weight,hight,code;
+	int size,width,height,code;
 	const std::string pth;
 	Rbmp24bits(std::string p):pth(p){
 		code=test();
@@ -99,29 +102,25 @@ public:
 	}
 };
 
-inline std::string bmp(const char*pth,LL resize=0){
-	int weight=resize>>32,hight=resize&INT_MAX;
-	std::string ws=std::to_string(weight),hs=std::to_string(hight);
-	std::string p2="";
-	p2+=pth;
+inline std::string bmp(const char*pth,int resizex=0,int resizey=0){
+	std::string rx=std::to_string(resizex),ry=std::to_string(resizey);
+	std::string p2=pth;
 	p2+=".";
-	p2+=resize?ws+"x"+hs:"original";
+	p2+=(resizex|resizey)?rx+"x"+ry:"original";
 	p2+=".bmp";
 	
 	std::string s="ffmpeg -y -i \"";
 	s+=pth;
 	s+="\" ";
-	if(resize)
-		s+="-vf scale="+ws+":"+hs+" ";
-	s+="\"";
-	s+=p2;
-	s+="\" 1>nul 2>&1";
+	if(resizex|resizey)
+		s+="-vf scale="+rx+":"+ry+" ";
+	s+="\""+p2+"\" 1>nul 2>&1";
 	system(s.c_str());
 
 	return p2;
 }
 
-#define Q_MAX 16
+#define Q_MAX 256
 class Q{
 public:
 	int num[8][Q_MAX],col[8][Q_MAX];
@@ -153,7 +152,7 @@ public:
 	}
 	void show(){
 		for(int w=0;w<8;w++)for(int i=0;i<need;i++){
-			if(num[w][i]<limit)break;
+			if(num[w][i]<=limit)break;
 			printf("%d %06X %d\n",w+1,col[w][i],num[w][i]);
 		}
 	}
@@ -164,9 +163,10 @@ public:
 		s=s.substr(0,s.find_last_of("."));
 		fprintf(f,"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n\t\t<title>\n\t\t\tColor Card\n\t\t</title>\n\t</head>\n\t<style>\n\t\tbody{\n\t\t\tbackground-image:url(\"%s\");\n\t\t\tbackground-size:100%s auto;\n\t\t}\n\t</style>\n\t<body style=\"font-family:Consolas;text-align:center;\"><h1>Color Card</h1>\n",s.c_str(),"%");
 		for(int w=0;w<8;w++){
-			fprintf(f,"\t\t<p>\n\t\t\t<div style=\"font-size:24px;font-weight:bold;\">Level %d</div>\n",w+1);
+			if(num[w][0]<=limit)continue;
+			fprintf(f,"\t\t<p>\n\t\t\t<div style=\"font-size:24px;font-width:bold;\">Level %d</div>\n",w+1);
 			for(int i=0;i<need;i++){
-				if(num[w][i]<limit)break;
+				if(num[w][i]<=limit)break;
 				fprintf(f,"\t\t\t<div style=\"color:#%06X;background-color:#%06X;\">#%06X&nbsp;",col[w][i]^0x808080,col[w][i],col[w][i]);
 				for(int k=1000000000;k>1;k/=10){
 					if(k>num[w][i])fprintf(f,"&nbsp;");
@@ -229,7 +229,6 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 		}
 	}
 
-	if(LOG&1)printf("Checking...\n");
 	if(q->total^inverse[4])printf("Warning: Checksum failure.");
 	free(inverse);
 
@@ -240,4 +239,25 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 	if(LOG&1)printf("Ending...\n");
 }
 
+inline void naive(char*pth,int needx=4,int needy=4){
+	if(LOG&1)printf("Loading...\n");
+	const int need=needx*needy;
+	if(0>=need||need>=Q_MAX)err(ERR_INPUT_SIZE_1);
+	std::string s=bmp(pth,needx,needy);
+	Rbmp24bits*p=new Rbmp24bits(s);
 
+	if(LOG&1)printf("Analyzing...\n");
+	Q*q=new Q(p->pth,need,0,need);
+	for(int i=0;i<p->size;){
+		register int b=p->o[i++];
+		register int g=p->o[i++];
+		register int r=p->o[i++];
+		q->insert(1,1,r<<16|g<<8|b);
+	}
+
+	if(LOG&1)printf("Drawing...\n");
+	if(LOG&2)q->show();
+	if(LOG&4)q->draw();
+
+	if(LOG&1)printf("Ending...\n");
+}

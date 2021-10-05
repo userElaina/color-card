@@ -13,19 +13,7 @@
 
 ### Function
 
-#### Input
-
-```cpp
-void crowd(char*pth,double limit=0.01,int need=Q_MAX);
-```
-
-`pth` 文件路径.
-
-`limit` 色系占比小于它的颜色将被忽略.
-
-`need` 色卡中需要多少颜色.
-
-#### Output
+#### Basic
 
 `#include` 头文件后,可手动调整变量 `LOG`.
 
@@ -37,7 +25,31 @@ void crowd(char*pth,double limit=0.01,int need=Q_MAX);
 
 ![image](./log/p1)
 
-若调用 `crowd` , `Level n` 意味着将颜色分为 `1<<(n*3)` 类计数.
+#### `crowd`
+
+```cpp
+void crowd(char*pth,double limit=0.01,int need=Q_MAX);
+```
+
+`pth` 文件路径.
+
+`limit` 色系占比小于 *limit* 的颜色将被忽略.
+
+`need` 获得一个 *need* 种颜色的色卡.
+
+html中的 `Level n` 意味着将颜色分为 `1<<(n*3)` 类计数.
+
+#### `naive`
+
+```cpp
+void naive(char*pth,int needx=4,int needy=4);
+```
+
+`pth` 文件路径.
+
+`needx needy` 获得一个 *needx\*needy* 种颜色的色卡.
+
+html中的 `Level` 无意义.
 
 ### 由来
 
@@ -47,12 +59,10 @@ void crowd(char*pth,double limit=0.01,int need=Q_MAX);
 
 ##### Python
 
-返回值是 `[[b,g,r,value],...]`
+返回值是 `[[b,g,r,value],...]`.
 
 ### To Do
 
-规则分块生成色卡.
-
-不规则分块生成色卡.
+将图片划分为不规则的颜色相近的区域,并生成色卡.
 
 命令行工具.
