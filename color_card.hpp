@@ -159,7 +159,10 @@ public:
 	}
 	void draw(){
 		FILE*f=fopen((pth+".html").c_str(),"w");
-		fprintf(f,"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n\t\t<title>\n\t\t\tColor Card\n\t\t</title>\n\t</head>\n\t<style>\n\t\tbody{\n\t\t\tbackground-image:url(\"%s\");\n\t\t\tbackground-size:100%s auto;\n\t\t}\n\t</style>\n\t<body style=\"font-family:Consolas;text-align:center;\"><h1>Color Card</h1>\n",pth.substr(pth.find_last_of("/\\")+1).c_str(),"%");
+		std::string s=pth.substr(pth.find_last_of("/\\")+1);
+		s=s.substr(0,s.find_last_of("."));
+		s=s.substr(0,s.find_last_of("."));
+		fprintf(f,"<!DOCTYPE html>\n<html>\n\t<head>\n\t\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n\t\t<title>\n\t\t\tColor Card\n\t\t</title>\n\t</head>\n\t<style>\n\t\tbody{\n\t\t\tbackground-image:url(\"%s\");\n\t\t\tbackground-size:100%s auto;\n\t\t}\n\t</style>\n\t<body style=\"font-family:Consolas;text-align:center;\"><h1>Color Card</h1>\n",s.c_str(),"%");
 		for(int w=0;w<8;w++){
 			fprintf(f,"\t\t<p>\n\t\t\t<div style=\"font-size:24px;font-weight:bold;\">Level %d</div>\n",w+1);
 			for(int i=0;i<need;i++){
