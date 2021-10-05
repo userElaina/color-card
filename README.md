@@ -54,3 +54,5 @@ void crowd(char*pth,double limit=0.01,int need=Q_MAX);
 规则分块生成色卡.
 
 不规则分块生成色卡.
+
+命令行工具.
