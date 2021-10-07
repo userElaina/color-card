@@ -1,12 +1,12 @@
 #include "color_card.hpp"
 
 int main(int argc,char **argv){
-	LOG=0xffffff;
+	OUTPUT=OUTPUT_DEBUG|OUTPUT_PROGRESS|OUTPUT_LIST|OUTPUT_HTML|OUTPUT_PIC;
 	crowd("./example/87011701_p0.jpg");
-	printf("\n");
 	crowd("./example/1 1.bmp");
-	printf("\n");
 	naive("./example/87011701_p0.jpg");
-	printf("\n");
 	naive("./example/87011701_p0.jpg",7,8);
+	line("./example/87011701_p0.jpg",192);
+	line("./example/87011701_p0.jpg",96,1);
+	line("./example/87011701_p0.jpg",96,0,0xe39dac);
 }

@@ -15,20 +15,26 @@
 
 #### Basic
 
-`#include` 头文件后,可手动调整变量 `LOG`.
+`#include` 头文件后,可手动调整变量 `OUTPUT` 为以下常量的或.
 
-`LOG&1` 是否输出当前执行状态信息(如 `"Loading..."` ).
+`OUTPUT_DEBUG` 是否控制台输出debug信息
 
-`LOG&2` 是否输出(8个等级的)色卡信息(格式 `"%d %06X %d",level,color,pixels` ).
+`OUTPUT_PROGRESS` 是否控制台输出当前执行进度(如 `"Loading..."` ).
 
-`LOG&4` 是否输出如下样子的 `html` .
+`OUTPUT_LIST` 是否控制台输出色卡信息(格式 `"%d %06X %d",level,color,pixels` ).
+
+`OUTPUT_HTML` 是否保存如下样子的 `html` .
 
 ![image](./log/p1)
 
+`OUTPUT_PIC` 是否保存 `line` 函数处理后的图片.
+
 #### `crowd`
 
+将像素分类,按照比例提取色卡.
+
 ```cpp
-void crowd(char*pth,double limit=0.01,int need=Q_MAX);
+void crowd(std::string pth,double limit=0.01,int need=Q_MAX);
 ```
 
 `pth` 文件路径.
@@ -41,8 +47,10 @@ html中的 `Level n` 意味着将颜色分为 `1<<(n*3)` 类计数.
 
 #### `naive`
 
+将马赛克,根据像素点提取色卡.
+
 ```cpp
-void naive(char*pth,int needx=4,int needy=4);
+void naive(std::string pth,int needx=4,int needy=4);
 ```
 
 `pth` 文件路径.
@@ -50,6 +58,25 @@ void naive(char*pth,int needx=4,int needy=4);
 `needx needy` 获得一个 *needx\*needy* 种颜色的色卡.
 
 html中的 `Level` 无意义.
+
+#### `line`
+
+将图片勾线/提取线稿+调色.
+
+```cpp
+void line(std::string pth,int dis=96,int onlyline=0,int color=-1)
+```
+
+`pth` 文件路径.
+
+`dis` 数字越大,勾线越少.当 `dis>=765` 时,一定不会有任何勾线.
+
+`onlyline` 是否只保留线稿.
+
+`color` 负值表示不调色,正值表示调色使用的标准颜色.
+
+![image](./log/p2)
+原图(左上), 勾线(右上), 线稿(左下), 勾线+调色(右下)
 
 ### 由来
 

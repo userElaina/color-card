@@ -9,6 +9,7 @@
 #define register
 // #define inline
 
+#define WARN_EXTRA_DATA 1
 #define ERR_NOT_BMP_1 (-1)
 #define ERR_NOT_BMP_2 (-2)
 #define ERR_NOT_BMP_3 (-3)
@@ -23,16 +24,15 @@
 #define ERR_SIZE_3 (-15)
 
 #define size_head 0x36
+#define DEFAULT_Y -2147483647
+#define DEFAULT_Z -2147483646
+#define DEFAULT_G -2147483643
+#define DEFAULT_B -2147483642
 
-inline void err(int code){
-	printf("Error code: %d",code);
-	exit(0);
-}
-
-inline int argb(int r,int g=-1,int b=-1,int a=0){
+inline int argb(int r,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
 	if(a<0||a>0xff)
 		return ERR_NOT_24BIT_2;
-	if(g==-1&&b==-1){
+	if(g==DEFAULT_G&&b==DEFAULT_B){
 		if(r<0||r>0xffffff)
 			return ERR_NOT_24BIT_1;
 		if(!a)
@@ -52,22 +52,17 @@ inline int argb(int r,int g=-1,int b=-1,int a=0){
 	return r<<16|g<<8|b;
 }
 
-inline std::string bmp(const char*pth,int resizex=0,int resizey=0){
+inline std::string bmp(std::string pth,int resizex=0,int resizey=0,std::string ext="original"){
 	std::string rx=std::to_string(resizex),ry=std::to_string(resizey);
-	std::string p2=pth;
-	p2+=".";
-	p2+=(resizex|resizey)?rx+"x"+ry:"original";
-	p2+=".bmp";
-	
-	std::string s="ffmpeg -y -i \"";
-	s+=pth;
-	s+="\" ";
-	if(resizex|resizey)
-		s+="-vf scale="+rx+":"+ry+" ";
-	s+="\""+p2+"\" 1>nul 2>&1";
+	std::string p2=pth+"."+((resizex|resizey)?rx+"x"+ry:ext)+".bmp";
+	std::string s="ffmpeg -y -i \""+pth+"\" "+((resizex|resizey)?"-vf scale="+rx+":"+ry+" ":"")+"\""+p2+"\" 1>nul 2>&1";
 	system(s.c_str());
 
 	return p2;
+}
+
+inline std::string bmp(std::string pth,std::string ext){
+	return bmp(pth,0,0,ext);
 }
 
 class BMP24bits{
@@ -82,8 +77,8 @@ private:
 			reg>>=8;
 		}
 	}
-	inline int _getxy(int x,int y=-1){
-		if(y==-1){
+	inline int _getxy(int x,int y=DEFAULT_Y){
+		if(y==DEFAULT_Y){
 			if(x<0||x>=size)
 				return ERR_SIZE_3;
 		}else{
@@ -91,12 +86,14 @@ private:
 				return ERR_SIZE_3;
 			x=x+y*width;
 		}
-		return x+(x<<1);
+		return x;
 	}
 
 public:
 	int size,width,height,code;
 	B*o;
+	int*tag;
+	int lastag=0;
 	B head[size_head]={
 		0x42,0x4d,0xff,0xff,	0xff,0xff,0x00,0x00,	0x00,0x00,0x36,0x00,	0x00,0x00,0x28,0x00,
 		0x00,0x00,0xff,0xff,	0xff,0xff,0xff,0xff,	0xff,0xff,0x01,0x00,	0x18,0x00,0x00,0x00,
@@ -119,19 +116,23 @@ public:
 		_sethead(xy,0x12,0x19);
 		_sethead(size_data,0x22,0x25);
 
-		o=(B*)malloc(size_o);
-		clear();
+		alloc();
+		white();
 	}
 
 	BMP24bits(std::string p){
 		code=read(p);
-		if(code)
-			err(code);
 	}
 	
-	inline void clear(){memset(o,0xff,size_o);}
+	inline void alloc(){
+		o=(B*)malloc(size_o);
+		tag=(int*)malloc(size<<2);
+		memset(tag,0,size<<2);
+	}
+	inline void white(){memset(o,0xff,size_o);}
+	inline void black(){memset(o,0x00,size_o);}
 
-	inline int read(const std::string pth){
+	inline int read(std::string pth){
 		FILE*f=fopen(pth.c_str(),"rb");
 		if(fread(head,1,0x36,f)^0x36)return ERR_SIZE_1;
 		p=head;
@@ -179,7 +180,7 @@ public:
 		// const
 
 		p=(B*)malloc(4);
-		o=(B*)malloc(size_o);
+		alloc();
 		for(int i=0;i<height;i++){
 			if(fread(o+i*width3,1,width3,f)^width3)return ERR_SIZE_2;
 			if(fread(p,1,mo,f)^mo)return ERR_SIZE_2;
@@ -190,8 +191,8 @@ public:
 		return 0;
 	}
 
-	inline int save(const std::string pth){
-		FILE*f=fopen(pth.c_str(),"wb");
+	inline int save(std::string pth,int compress=0){
+		FILE*f=fopen((compress?pth+".bmp":pth).c_str(),"wb");
 		const int width3=width+(width<<1);
 		const int mo=width&3;
 		p=(B*)malloc(4);
@@ -201,30 +202,79 @@ public:
 			fwrite(o+i*width3,1,width3,f);
 			fwrite(p,1,mo,f);
 		}
+		fclose(f);
+		if(!compress)return 0;
+		
+		std::string s="ffmpeg -y -f bmp_pipe -i \""+pth+".bmp\" \""+pth+"\" 1>nul 2>&1";
+		system(s.c_str());
 		return 0;
 	}
 
-	inline int getpixel(int x,int y=-1){
+	inline int getag(int x,int y=DEFAULT_Y){
 		if((x=_getxy(x,y))<0)
 			return x;
+		return tag[x];
+	}
+
+	inline int getpixel(int x,int y=DEFAULT_Y){
+		if((x=_getxy(x,y))<0)
+			return x;
+		x=x+(x<<1);
 		register int b=o[x++];
 		register int g=o[x++];
 		register int r=o[x];
 		return r<<16|g<<8|b;
 	}
 
-	inline int setpixel(int x,int y=-1,int r=0x000000,int g=-1,int b=-1,int a=0){
+	inline int setag(int x,int y=DEFAULT_Y,int z=DEFAULT_Z){
 		if((x=_getxy(x,y))<0)
 			return x;
+		if(z^DEFAULT_Z)lastag=z;
+		tag[x]=lastag;
+		return 0;
+	}
+
+	inline int setpixel(int x,int y=DEFAULT_Y,int r=0x000000,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
+		if((x=_getxy(x,y))<0)
+			return x;
+		x=x+(x<<1);
 		if((r=argb(r,g,b,a))<0)
 			return r;
-		int i=y>=0?x*width+y:x;
-		i=i+(i<<1);
-		o[i++]=r&0xff;
+		o[x++]=r&0xff;
 		r>>=8;
-		o[i++]=r&0xff;
+		o[x++]=r&0xff;
 		r>>=8;
-		o[i]=r;
+		o[x]=r;
+		return 0;
+	}
+
+	inline int bgray(int r=0xffffff,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
+		if((r=argb(r,g,b,a))<0)
+			return r;
+		b=r&0xff;
+		g=(r>>=8)&0xff;
+		r>>=8;
+		for(int i=0;i<size_o;){
+			const int c=299*o[i+2]+587*o[i+1]+114*o[i];
+			o[i++]=(c*b+127500)/255000;
+			o[i++]=(c*g+127500)/255000;
+			o[i++]=(c*r+127500)/255000;
+		}
+		return 0;
+	}
+
+	inline int wgray(int r=0x000000,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
+		if((r=argb(r,g,b,a))<0)
+			return r;
+		b=(r&0xff)^0xff;
+		g=((r>>=8)&0xff)^0xff;
+		r=(r>>8)^0xff;
+		for(int i=0;i<size_o;){
+			const int c=255000-(299*o[i+2]+587*o[i+1]+114*o[i]);
+			o[i++]=((c*b+127500)/255000)^0xff;
+			o[i++]=((c*g+127500)/255000)^0xff;
+			o[i++]=((c*r+127500)/255000)^0xff;
+		}
 		return 0;
 	}
 };
