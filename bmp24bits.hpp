@@ -24,6 +24,34 @@
 
 #define size_head 0x36
 
+inline void err(int code){
+	printf("Error code: %d",code);
+	exit(0);
+}
+
+inline int argb(int r,int g=-1,int b=-1,int a=0){
+	if(a<0||a>0xff)
+		return ERR_NOT_24BIT_2;
+	if(g==-1&&b==-1){
+		if(r<0||r>0xffffff)
+			return ERR_NOT_24BIT_1;
+		if(!a)
+			return r;
+		b=r&0xff;
+		g=(r>>8)&0xff;
+		r=r>>16;
+	}else{
+		if(r<0||r>0xff||g<0||g>0xff||b<0||b>0xff)
+			return ERR_NOT_24BIT_1;
+	}
+	if(a){
+		r+=a-(r*a+127)/255;
+		g+=a-(g*a+127)/255;
+		b+=a-(b*a+127)/255;
+	}
+	return r<<16|g<<8|b;
+}
+
 inline std::string bmp(const char*pth,int resizex=0,int resizey=0){
 	std::string rx=std::to_string(resizex),ry=std::to_string(resizey);
 	std::string p2=pth;
@@ -42,11 +70,6 @@ inline std::string bmp(const char*pth,int resizex=0,int resizey=0){
 	return p2;
 }
 
-inline void err(int code){
-	printf("Error code: %d",code);
-	exit(0);
-}
-
 class BMP24bits{
 private:
 	int size_o;
@@ -58,6 +81,17 @@ private:
 			head[i]=reg&0xff;
 			reg>>=8;
 		}
+	}
+	inline int _getxy(int x,int y=-1){
+		if(y==-1){
+			if(x<0||x>=size)
+				return ERR_SIZE_3;
+		}else{
+			if(x<0||y<0||x>=width||y>=height)
+				return ERR_SIZE_3;
+			x=x+y*width;
+		}
+		return x+(x<<1);
 	}
 
 public:
@@ -86,9 +120,7 @@ public:
 		_sethead(size_data,0x22,0x25);
 
 		o=(B*)malloc(size_o);
-		printf("new3");
 		clear();
-		printf("new3");
 	}
 
 	BMP24bits(std::string p){
@@ -172,13 +204,34 @@ public:
 		return 0;
 	}
 
-	inline int getpixel(int x,int y=1){
-		int i=x*y;
-		i=i+(i<<1);
-		register int b=o[i++];
-		register int g=o[i++];
-		register int r=o[i++];
+	inline int getpixel(int x,int y=-1){
+		if((x=_getxy(x,y))<0)
+			return x;
+		register int b=o[x++];
+		register int g=o[x++];
+		register int r=o[x];
 		return r<<16|g<<8|b;
+	}
+
+	inline int setpixel(int x,int y=-1,int r=0x000000,int g=-1,int b=-1,int a=0){
+		if((x=_getxy(x,y))<0)
+			return x;
+		if((r=argb(r,g,b,a))<0)
+			return r;
+		int i=y>=0?x*width+y:x;
+		i=i+(i<<1);
+		o[i++]=r&0xff;
+		r>>=8;
+		o[i++]=r&0xff;
+		r>>=8;
+		o[i]=r;
+		return 0;
 	}
 };
 
+inline int distance(int l,int r){
+	if(l<0||l>0xffffff||r<0||r>0xffffff)
+		return ERR_NOT_24BIT_1;
+	l^=r;
+	return (l>>16)+((l>>8)&0xff)+(l&0xff);
+}
