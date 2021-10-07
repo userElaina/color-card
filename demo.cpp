@@ -5,6 +5,8 @@ int main(int argc,char **argv){
 	crowd("./example/87011701_p0.jpg");
 	printf("\n");
 	crowd("./example/1 1.bmp");
+	printf("\n");
 	naive("./example/87011701_p0.jpg");
+	printf("\n");
 	naive("./example/87011701_p0.jpg",7,8);
 }

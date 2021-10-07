@@ -1,124 +1,10 @@
 // code by userElaina
+#include "bmp24bits.hpp"
 
 #define DEBUG 0
 int LOG=0xffffff;
 
-#include<bits/stdc++.h>
-
-#define LL long long
-#define ULL unsigned long long
-#define B unsigned char
-#define pt putchar
-#define gt getchar
-
-#define register
-// #define inline
-
-#define ERR_NOT_BMP_1 (-1)
-#define ERR_NOT_BMP_2 (-2)
-#define ERR_NOT_BMP_3 (-3)
-#define ERR_NOT_24BIT_1 (-5)
-#define ERR_NOT_24BIT_2 (-6)
-#define ERR_NOT_24BIT_3 (-7)
-#define ERR_OTHER_DATA_1 (-9)
-#define ERR_OTHER_DATA_2 (-10)
-#define ERR_OTHER_DATA_3 (-11)
-#define ERR_SIZE_1 (-13)
-#define ERR_SIZE_2 (-14)
-#define ERR_SIZE_3 (-15)
-
 #define ERR_INPUT_SIZE_1 (-17)
-
-inline void err(int code){printf("Error code: %d",code);exit(0);}
-
-class Rbmp24bits{
-private:
-	B*p;
-	inline int test(){
-		FILE*f=fopen(pth.c_str(),"rb");
-		B head[0x36];
-		if(fread(head,1,0x36,f)^0x36)return ERR_SIZE_1;
-		p=head;
-
-		if(nc()^'B')return ERR_NOT_BMP_1;
-		if(nc()^'M')return ERR_NOT_BMP_2;
-		// const "BM"
-
-		register int full_size=int4();
-
-		if(int4())return ERR_OTHER_DATA_1;
-		// const 0x00
-
-		if(int4()^0x36)return ERR_NOT_24BIT_1;
-		// head size 0x36 bits
-		
-		if(int4()^0x28)return ERR_NOT_24BIT_1;
-		// head 2 size 0x36 bits
-
-		width=int4();height=int4();
-		int width3=width+(width<<1);
-		size=width3*height;
-		int mo=width&3;
-		int width3mo=width3+mo;
-
-		if(full_size^(width3mo*height+0x36))return ERR_NOT_24BIT_2;
-		// 4B
-
-		if(int4()^0x180001)return ERR_OTHER_DATA_2;
-		// const 0x00180001
-
-		if(int4())return ERR_NOT_BMP_2;
-		// const compress 0x00
-
-		if((int4()+0x36)^full_size)return ERR_NOT_24BIT_3;
-		// img_size and full_size
-
-		if(int4())return ERR_OTHER_DATA_3;
-		if(int4())return ERR_OTHER_DATA_3;
-		if(int4())return ERR_OTHER_DATA_3;
-		// const 0x000000
-
-		for(int i=0;i<height;i++){
-			if(fread(o+i*width3,1,width3,f)^width3)return ERR_SIZE_2;
-			if(fread(head,1,mo,f)^mo)return ERR_SIZE_2;
-		}
-
-		if(fread(head,1,1,f))
-			return 1;
-
-		return 0;
-	}
-	inline B nc(){return *p++;}
-	inline int int4(){return nc()|nc()<<8|nc()<<16|nc()<<24;}
-
-public:
-	B o[100000000];
-	int size,width,height,code;
-	const std::string pth;
-	Rbmp24bits(std::string p):pth(p){
-		code=test();
-		if(code)
-			err(code);
-	}
-};
-
-inline std::string bmp(const char*pth,int resizex=0,int resizey=0){
-	std::string rx=std::to_string(resizex),ry=std::to_string(resizey);
-	std::string p2=pth;
-	p2+=".";
-	p2+=(resizex|resizey)?rx+"x"+ry:"original";
-	p2+=".bmp";
-	
-	std::string s="ffmpeg -y -i \"";
-	s+=pth;
-	s+="\" ";
-	if(resizex|resizey)
-		s+="-vf scale="+rx+":"+ry+" ";
-	s+="\""+p2+"\" 1>nul 2>&1";
-	system(s.c_str());
-
-	return p2;
-}
 
 #define Q_MAX 256
 class Q{
@@ -184,7 +70,7 @@ public:
 inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 	if(LOG&1)printf("Loading...\n");
 	std::string s=bmp(pth);
-	Rbmp24bits*p=new Rbmp24bits(s);
+	BMP24bits*p=new BMP24bits(s);
 
 	if(LOG&1)printf("Initializing...\n");
 	int*inverse=(int*)malloc(1<<29);//1<<1<<24<<2<<2
@@ -199,7 +85,7 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 	}
 
 	if(LOG&1)printf("Sorting...\n");
-	Q*q=new Q(p->pth,p->size/3,limit,need);
+	Q*q=new Q(s,p->size/3,limit,need);
 	free(p);
 	for(int w=8;w>0;w--){
 		const int _get_tail=(1<<w)-1;
@@ -235,6 +121,7 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 	if(LOG&1)printf("Drawing...\n");
 	if(LOG&2)q->show();
 	if(LOG&4)q->draw();
+	free(q);
 
 	if(LOG&1)printf("Ending...\n");
 }
@@ -244,20 +131,22 @@ inline void naive(char*pth,int needx=4,int needy=4){
 	const int need=needx*needy;
 	if(0>=need||need>=Q_MAX)err(ERR_INPUT_SIZE_1);
 	std::string s=bmp(pth,needx,needy);
-	Rbmp24bits*p=new Rbmp24bits(s);
+	BMP24bits*p=new BMP24bits(s);
 
 	if(LOG&1)printf("Analyzing...\n");
-	Q*q=new Q(p->pth,need,0,need);
+	Q*q=new Q(s,need,0,need);
 	for(int i=0;i<p->size;){
 		register int b=p->o[i++];
 		register int g=p->o[i++];
 		register int r=p->o[i++];
 		q->insert(1,1,r<<16|g<<8|b);
 	}
+	free(p);
 
 	if(LOG&1)printf("Drawing...\n");
 	if(LOG&2)q->show();
 	if(LOG&4)q->draw();
+	free(q);
 
 	if(LOG&1)printf("Ending...\n");
 }
