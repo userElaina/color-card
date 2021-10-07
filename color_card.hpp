@@ -77,15 +77,12 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 	memset(inverse,0,1<<29);
 	
 	if(LOG&1)printf("Analyzing...\n");
-	for(int i=0;i<p->size;){
-		register int b=p->o[i++];
-		register int g=p->o[i++];
-		register int r=p->o[i++];
-		inverse[(1<<24|r<<16|g<<8|b)<<2]++;
+	for(int i=0;i<p->size;i++){
+		inverse[(1<<24|p->getpixel(i))<<2]++;
 	}
 
 	if(LOG&1)printf("Sorting...\n");
-	Q*q=new Q(s,p->size/3,limit,need);
+	Q*q=new Q(s,p->size,limit,need);
 	free(p);
 	for(int w=8;w>0;w--){
 		const int _get_tail=(1<<w)-1;
@@ -135,11 +132,8 @@ inline void naive(char*pth,int needx=4,int needy=4){
 
 	if(LOG&1)printf("Analyzing...\n");
 	Q*q=new Q(s,need,0,need);
-	for(int i=0;i<p->size;){
-		register int b=p->o[i++];
-		register int g=p->o[i++];
-		register int r=p->o[i++];
-		q->insert(1,1,r<<16|g<<8|b);
+	for(int i=0;i<p->size;i++){
+		q->insert(1,1,p->getpixel(i));
 	}
 	free(p);
 
