@@ -88,7 +88,7 @@ public:
 			err(code);
 	}
 	
-	inline int clear(){memset(o,0xff,8);}
+	inline int clear(){memset(o,0xff,size);}
 
 	inline int read(const std::string pth){
 		FILE*f=fopen(pth.c_str(),"rb");
@@ -150,7 +150,7 @@ public:
 		FILE*f=fopen(pth.c_str(),"wb");
 		int width3=width+(width<<1),mo=width&3;
 		p=(B*)malloc(4);
-		memset(p,0,8);
+		memset(p,0,4);
 		fwrite(head,1,0x36,f);
 		for(int i=0;i<height;i++){
 			fwrite(o+i*width3,1,width3,f);

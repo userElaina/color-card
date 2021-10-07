@@ -14,8 +14,8 @@ public:
 	const std::string pth;
 
 	Q(std::string s,int t,double l,int n=Q_MAX):pth(s),total(t),limit(l*(double)t+0.5),need(n<Q_MAX?n:Q_MAX){
-		memset(num,0,8);
-		memset(col,0,8);
+		memset(num,0,Q_MAX<<5);
+		memset(col,0,Q_MAX<<5);
 	}
 	const int search(int w,int n){
 		if(n<limit)return need;
@@ -74,7 +74,7 @@ inline void crowd(char*pth,double limit=0.01,int need=Q_MAX){
 
 	if(LOG&1)printf("Initializing...\n");
 	int*inverse=(int*)malloc(1<<29);//1<<1<<24<<2<<2
-	memset(inverse,0,8);
+	memset(inverse,0,1<<29);
 	
 	if(LOG&1)printf("Analyzing...\n");
 	for(int i=0;i<p->size;){
