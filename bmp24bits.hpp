@@ -235,34 +235,59 @@ public:
     inline int getp(int x,const int y=DEFAULT_Y){
         if(y==DEFAULT_Y){
             if(x<0||x>=size){
-                printf("ERROR %d>=%d\n",x,size);
+                // printf("ERROR %d %d\n",x,size);
                 return ERR_SIZE_3;
             }
             return x;
         }else{
             if(x<0||y<0||x>=width||y>=height){
-                printf("ERROR %d>=%d %d>=%d\n",x,width,y,height);
+                // printf("ERROR (%d,%d) (%d,%d)\n",x,y,width,height);
                 return ERR_SIZE_3;
             }
             return x+y*width;
         }
     }
 
-    inline int getag(const int p){
+    inline int getag(const int x,const int y=DEFAULT_Y){
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         return tag[p];
     }
 
-    inline B getb(const int p){
+    inline B getb(const int x,const int y=DEFAULT_Y){
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         return o[p+(p<<1)];
     }
-    inline B getg(const int p){
-        return o[p+(p<<1)+1];
+    inline B getg(const int x,const int y=DEFAULT_Y){
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
+        return o[p+(p<<1|1)];
     }
-    inline B getr(const int p){
+    inline B getr(const int x,const int y=DEFAULT_Y){
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         return o[p+((p+1)<<1)];
     }
 
-    inline int getpixel(const int p){
+    inline int getpixel(const int x,const int y=DEFAULT_Y){
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         int p3=p+(p<<1);
         const int b=o[p3++];
         const int g=o[p3++];
@@ -270,13 +295,46 @@ public:
         return r<<16|g<<8|b;
     }
 
-    inline int setag(const int p,const int z=DEFAULT_Z){
-        if(z^DEFAULT_Z)lastag=z;
+    inline int setag(const int x,const int y=DEFAULT_Y,const int z=DEFAULT_Z){
+        if(z^DEFAULT_Z){
+            if(y^DEFAULT_Y){
+                lastag=z;
+            }else{
+                throw "BMP24bits.setag: Need 1 or 3 args";
+            }
+        }else{
+            if(y^DEFAULT_Y){
+                throw "BMP24bits.setag: Need 1 or 3 args";
+            }else{}
+        }
+
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         tag[p]=lastag;
         return 0;
     }
 
-    inline int setpixel(const int p,const int rgb=0x000000){
+    inline int setpixel(const int x,const int y=DEFAULT_Y,int rgb=DEFAULT_A){
+        if(rgb^DEFAULT_A){
+            if(y^DEFAULT_Y){}else{
+                throw "BMP24bits.setpixel: Need 1 or 3 args";
+            }
+        }else{
+            if(y^DEFAULT_Y){
+                throw "BMP24bits.setpixel: Need 1 or 3 args";
+            }else{
+                rgb=0x000000;
+            }
+        }
+
+        const int p=getp(x,y);
+        if(p<0){
+            return p;
+        }
+
         const int b=rgb&0xff;
         const int g=(rgb>>8)&0xff;
         const int r=rgb>>16;

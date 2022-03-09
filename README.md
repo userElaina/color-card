@@ -1,6 +1,11 @@
 # color-card
 
-从图片中提取色卡
+从图片中
+[提取色卡](#crowd)/
+[提取线稿](#line)/
+[勾线](#line)/
+[调色](#line)/
+[筛查低级水印](#水印筛查)(如豆瓣).
 
 ### About
 
@@ -77,6 +82,22 @@ void line(std::string pth,int dis=96,int onlyline=0,int color=-1)
 
 ![image](./log/p2)
 原图(左上), 勾线(右上), 线稿(左下), 勾线+调色(右下)
+
+##### 水印筛查
+
+线稿提取原理为对比相邻像素点颜色距离,因此该函数也可用于水印(低级)筛查.
+
+
+请设置 `dis` 为较小值(如 `10`), `onlyline=1` 后使用.
+
+e.g.
+```cpp
+line("./example/douban.jpg",9,1);
+```
+
+![image](./log/p4)
+
+警告: 很多公司已应用[更难以筛查的技术](https://www.zhihu.com/question/50735753)来隐藏水印.
 
 ### 由来
 

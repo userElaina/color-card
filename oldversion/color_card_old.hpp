@@ -224,7 +224,7 @@ inline void line(std::string pth,int dis=96,int onlyline=0,int color=-1){
                 if(tg^tg2)flg++;
             }
             if(flg){
-                p->setpixel(j,i,0x000000);
+                p->setpixel(j,i);
             }else if(onlyline){
                 p->setpixel(j,i,0xffffff);
             }
