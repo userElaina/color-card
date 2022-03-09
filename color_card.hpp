@@ -237,3 +237,18 @@ inline void line(std::string pth,int dis=96,int onlyline=0,int color=-1){
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Ending...\n\n");
 }
+
+inline void linear(std::string pth,int rgb_black1,int rgb_white1,int rgb_black0,int rgb_white0,int con=7){
+    if(OUTPUT&OUTPUT_PROGRESS)printf("Loading...\n");
+    std::string s=bmp(pth);
+    BMP24bits*p=new BMP24bits(s);
+    check_code(p->code);
+
+    if(OUTPUT&OUTPUT_PROGRESS)printf("Drawing...\n");
+    p->linear(rgb_black1,rgb_white1,rgb_black0,rgb_white0,con);
+
+    if(OUTPUT&OUTPUT_PROGRESS)printf("Saving...\n");
+    if(OUTPUT&OUTPUT_PIC)p->save(pth+"_linear.png",1);
+
+    if(OUTPUT&OUTPUT_PROGRESS)printf("Ending...\n\n");
+}

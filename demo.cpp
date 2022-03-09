@@ -11,7 +11,7 @@ int main(int argc,char **argv){
         line("./example/87011701_p0.jpg",96,1);
         line("./example/87011701_p0.jpg",96,0,0xe39dac);
         line("./example/douban.jpg",9,1);
-        line("./example/kuaiche.jpg",27,1);
+        linear("./example/kuaiche.jpg",0xfffffe,0xffffff,0x000000,0xffffff);
     }catch(const char *s){
         puts(s);
     }

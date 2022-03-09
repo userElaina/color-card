@@ -99,6 +99,22 @@ line("./example/douban.jpg",9,1);
 
 警告: 很多公司已应用[更难以筛查的技术](https://www.zhihu.com/question/50735753)来隐藏水印.
 
+#### `linear`
+
+```cpp
+void linear(std::string pth,int rgb_black1,int rgb_white1,int rgb_black0,int rgb_white0,int con=7)
+```
+
+`pth` 文件路径.
+
+将图片从 [`rgb_black1`,`rgb_white1`] 线性变换为 [`rgb_black0`,`rgb_white0`].
+
+`con` 控制是否对 R (`con&4`), G (`con&2`), B (`con&1`) 三个分量进行变换.
+
+![image](./log/p5)
+
+通过更个性化的蚕食增强水印筛查效果.
+
 ### 由来
 
 ![image](./log/p0)

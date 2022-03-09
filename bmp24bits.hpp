@@ -410,20 +410,24 @@ public:
         return linear(con,rgb_black1,rgb_white1,_min,_max);
     }
 
-    inline int linear(int con,int rgb_black1,int rgb_white1,int rgb_black0,int rgb_white0){
+    inline int _linearp(const int _o,const int _black0,const int _white0,const int _lv0,const int _black1,const int _white1,const int _lv1){
+        if(!_lv0){
+            return _o<_black0?_black1:_white1;
+        }
+        if(!_lv1){
+            return _black1;
+        }
+        if(_o<=_black0){
+            return _black1;
+        }
+        if(_o>=_white0){
+            return _white1;
+        }
+        return (_o-_black0)*_lv1/_lv0+_black1;
+    }
+
+    inline int linear(int rgb_black0,int rgb_white0,int rgb_black1,int rgb_white1,int con=7){
         if(!con)return 1;
-
-        const int b_black1=rgb_black1&0xff;
-        const int g_black1=(rgb_black1>>8)&0xff;
-        const int r_black1=rgb_black1>>16;
-
-        const int b_white1=rgb_white1&0xff;
-        const int g_white1=(rgb_white1>>8)&0xff;
-        const int r_white1=rgb_white1>>16;
-
-        const int b_lv1=b_white1-b_black1;
-        const int g_lv1=g_white1-g_black1;
-        const int r_lv1=r_white1-r_black1;
 
         const int b_black0=rgb_black0&0xff;
         const int g_black0=(rgb_black0>>8)&0xff;
@@ -437,17 +441,29 @@ public:
         const int g_lv0=g_white0-g_black0;
         const int r_lv0=r_white0-r_black0;
 
+        const int b_black1=rgb_black1&0xff;
+        const int g_black1=(rgb_black1>>8)&0xff;
+        const int r_black1=rgb_black1>>16;
+
+        const int b_white1=rgb_white1&0xff;
+        const int g_white1=(rgb_white1>>8)&0xff;
+        const int r_white1=rgb_white1>>16;
+
+        const int b_lv1=b_white1-b_black1;
+        const int g_lv1=g_white1-g_black1;
+        const int r_lv1=r_white1-r_black1;
+
         for(int i=0;i<size_o;){
             if(con&1){
-                o[i]=b_lv0?(o[i]-b_black0)*b_lv1/b_lv0+b_black1:(o[i]&128?b_white1:b_black1);
+                o[i]=_linearp(o[i],b_black0,b_white0,b_lv0,b_black1,b_white1,b_lv1);
             }
             i++;
             if(con&2){
-                o[i]=g_lv0?(o[i]-g_black0)*g_lv1/g_lv0+g_black1:(o[i]&128?g_white1:g_black1);
+                o[i]=_linearp(o[i],g_black0,g_white0,g_lv0,g_black1,g_white1,g_lv1);
             }
             i++;
             if(con&4){
-                o[i]=r_lv0?(o[i]-r_black0)*r_lv1/r_lv0+r_black1:(o[i]&128?r_white1:r_black1);
+                o[i]=_linearp(o[i],r_black0,r_white0,r_lv0,r_black1,r_white1,r_lv1);
             }
             i++;
         }
