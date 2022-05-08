@@ -1,0 +1,12 @@
+# Executables
+*.exe
+*.out
+
+# image
+*.bmp
+# *.png
+# *.jpg
+
+*.html
+
+Archive/
