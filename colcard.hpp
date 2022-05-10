@@ -1,5 +1,5 @@
 // code by userElaina
-#include "bmp.hpp"
+#include "bmp/bmp.hpp"
 
 #define OUTPUT_DEBUG 1
 #define OUTPUT_PROGRESS 2

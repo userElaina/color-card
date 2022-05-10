@@ -1,3 +1,6 @@
 [submodule "cmdline"]
     path = cmdline
     url = git@github.com:tanakh/cmdline.git
+[submodule "bmp"]
+    path = bmp
+    url = git@github.com:userElaina/bmp.git
