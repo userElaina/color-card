@@ -1,10 +1,10 @@
 # color-card
 
 从图片中
-[提取色卡](#crowd)/
-[提取线稿](#line)/
-[勾线](#line)/
-[调色](#line)/
+[提取色卡](#crowd) /
+[提取线稿](#line) /
+[勾线](#line) /
+[调色](#line) /
 [筛查低级水印](#水印筛查)(如豆瓣).
 
 ### About
@@ -20,7 +20,7 @@
 
 #### Start
 
-引用头文件 (如 `#include "bmp.hpp"`) 后, 可手动调整变量 `OUTPUT` 为以下常量的或.
+引用头文件 (如 `#include "bmp.hpp"`) 后, 可手动调整变量 `OUTPUT` 为以下常量的或:
 
 `OUTPUT_DEBUG` 是否控制台输出debug信息;
 
@@ -39,7 +39,7 @@
 将像素分类,按照比例提取色卡.
 
 ```cpp
-void crowd(std::string pth,double limit=0.01,int need=Q_MAX);
+void crowd(std::string pth,double limit=0.01,int need=256);
 ```
 
 `pth` 文件路径;
@@ -85,7 +85,7 @@ void line(std::string pth,int dis=96,int onlyline=0,int color=-1)
 
 ##### 水印筛查
 
-线稿提取原理为对比相邻像素点颜色距离,因此该函数也可用于水印(低级)筛查.
+线稿提取原理为对比相邻像素点颜色距离, 因此该函数也可用于水印(低级)筛查.
 
 
 请设置 `dis` 为较小值(如 `10`), `onlyline=1` 后使用.
@@ -97,33 +97,27 @@ line("./example/douban.jpg",9,1);
 
 ![image](./log/p4)
 
-警告: 很多公司已应用[更难以筛查的技术](https://www.zhihu.com/question/50735753)来隐藏水印.
+警告: 在很多地方已应用[更难以筛查的技术](https://www.zhihu.com/question/50735753)来隐藏水印.
 
 #### `linear`
 
 ```cpp
-void linear(std::string pth,int rgb_black1,int rgb_white1,int rgb_black0,int rgb_white0,int con=7)
+inline void linear(std::string pth,int rgb_black0,int rgb_white0,int rgb_black1,int rgb_white1,int con=0b111)
 ```
 
 `pth` 文件路径;
 
-将图片从 [`rgb_black1`,`rgb_white1`] 线性变换为 [`rgb_black0`,`rgb_white0`];
+将图片从 [`rgb_black0`,`rgb_white0`] 线性变换为 [`rgb_black1`,`rgb_white1`];
 
 `con` 控制是否对 R (`con&4`), G (`con&2`), B (`con&1`) 三个分量进行变换.
 
 ![image](./log/p5)
 
-通过更个性化的蚕食增强水印筛查效果.
+通过更个性化的参数增强水印筛查效果.
 
 ### 由来
 
 ![image](./log/p0)
-
-### Old Version
-
-##### Python
-
-返回值是 `[[b,g,r,value],...]`.
 
 ### To Do
 
