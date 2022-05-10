@@ -16,28 +16,47 @@
 #define absub(a,b) ((a<b)?(b-a):(a-b))
 #define lowbit(a) (a&fu(a))
 
-#define WARN_EXTRA_DATA 1
-#define ERR_NOT_BMP_1 (-1)
-#define ERR_NOT_BMP_2 (-2)
-#define ERR_NOT_BMP_3 (-3)
-#define ERR_NOT_24BIT_1 (-5)
-#define ERR_NOT_24BIT_2 (-6)
-#define ERR_NOT_24BIT_3 (-7)
-#define ERR_OTHER_DATA_1 (-9)
-#define ERR_OTHER_DATA_2 (-10)
-#define ERR_OTHER_DATA_3 (-11)
-#define ERR_SIZE_1 (-13)
-#define ERR_SIZE_2 (-14)
-#define ERR_SIZE_3 (-15)
+// #define ERR_NOT_BMP_1 (-1)
+// #define ERR_NOT_BMP_2 (-2)
+// #define ERR_NOT_BMP_3 (-3)
+// #define ERR_NOT_24BIT_1 (-5)
+// #define ERR_NOT_24BIT_2 (-6)
+// #define ERR_NOT_24BIT_3 (-7)
+// #define ERR_OTHER_DATA_1 (-9)
+// #define ERR_OTHER_DATA_2 (-10)
+// #define ERR_OTHER_DATA_3 (-11)
+// #define ERR_SIZE_1 (-13)
+// #define ERR_SIZE_2 (-14)
+// #define ERR_SIZE_3 (-15)
 
-#define size_head 0x36
-#define DEFAULT_X -2147483646
-#define DEFAULT_Y -2147483645
-#define DEFAULT_Z -2147483644
-#define DEFAULT_R -2147483643
-#define DEFAULT_G -2147483642
-#define DEFAULT_B -2147483641
-#define DEFAULT_A -2147483640
+const int WARN_EXTRA_DATA=1;
+
+const int WHITE8=0xff;
+const int BLACK8=0x00;
+const int WHITE24=0xffffff;
+const int BLACK24=0x000000;
+
+const int BMP_bfType=0x4d42;
+const int BMP_bfReserved=0;
+const int BMP_biPlanes=1;
+
+const int BMPRGB_biCompression=0;
+const int BMPRGB_biXPelsPerMeter=0;
+const int BMPRGB_biYPelsPerMeter=0;
+const int BMPRGB_biClrUsed=0;
+const int BMPRGB_biClrImportant=0;
+
+const int BMPRGB24_bfOffBits=0x36;
+const int BMPRGB24_biSize=0x28;
+const int BMPRGB24_biBitCount=0x18;
+
+const int DEFAULT_X=-2147483646;
+const int DEFAULT_Y=-2147483645;
+const int DEFAULT_Z=-2147483644;
+const int DEFAULT_R=-2147483643;
+const int DEFAULT_G=-2147483642;
+const int DEFAULT_B=-2147483641;
+const int DEFAULT_A=-2147483640;
 
 
 #if defined(__WINDOWS_) || defined(_WIN32)
@@ -54,10 +73,10 @@
 
 inline int argb(int r,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
     if(a<0||a>0xff)
-        return ERR_NOT_24BIT_2;
+        throw "a must be in [0x00,0xff]";
     if(g==DEFAULT_G&&b==DEFAULT_B){
         if(r<0||r>0xffffff)
-            return ERR_NOT_24BIT_1;
+            throw "rgb must be in [0x000000,0xffffff]";
         if(!a)
             return r;
         b=r&0xff;
@@ -65,7 +84,7 @@ inline int argb(int r,int g=DEFAULT_G,int b=DEFAULT_B,int a=0){
         r=r>>16;
     }else{
         if(r<0||r>0xff||g<0||g>0xff||b<0||b>0xff)
-            return ERR_NOT_24BIT_1;
+            throw "r,g,b must be in [0x00,0xff]";
     }
     if(a){
         r+=a-(r*a+127)/255;
@@ -88,127 +107,178 @@ inline std::string bmp(std::string pth,std::string ext){
     return bmp(pth,0,0,ext);
 }
 
-class BMP24bits{
+class BMPrgb24{
 private:
-    int size_o;
-    B*p;
-    inline int _nc(){return *p++;}
-    inline int _int4(){return _nc()|_nc()<<8|_nc()<<16|_nc()<<24;}
-    inline void _sethead(LL reg,int l,int r){
-        for(int i=l;i<=r;i++){
-            head[i]=reg&0xff;
-            reg>>=8;
-        }
-    }
+    int _size;
 
 public:
-    int size,width,height,code;
-    B*o;
-    int*tag;
+    int size,width,height;
+    B*o=NULL;
+    int*tag=NULL;
     int lastag=0;
-    // int _min,_max;
-    // int gray_max,gray_min;
 
-    B head[size_head]={
-        0x42,0x4d,0xff,0xff,    0xff,0xff,0x00,0x00,    0x00,0x00,0x36,0x00,    0x00,0x00,0x28,0x00,
-        0x00,0x00,0xff,0xff,    0xff,0xff,0xff,0xff,    0xff,0xff,0x01,0x00,    0x18,0x00,0x00,0x00,
-        0x00,0x00,0xff,0xff,    0xff,0xff,0x00,0x00,    0x00,0x00,0x00,0x00,    0x00,0x00,0x00,0x00,
-        0x00,0x00,0x00,0x00,    0x00,0x00
+    B head[BMPRGB24_bfOffBits]={
+//         0,   1,   2,   3,       4,   5,   6,   7,       8,   9,   A,   B,       C,   D,   E,   F
+/*0x00*/0x42,0x4d,0xff,0xff,    0xff,0xff,0x00,0x00,    0x00,0x00,0x36,0x00,    0x00,0x00,0x28,0x00,
+//                [       bfSize        ]
+/*0x10*/0x00,0x00,0xff,0xff,    0xff,0xff,0xff,0xff,    0xff,0xff,0x01,0x00,    0x18,0x00,0x00,0x00,
+//                [       biWidth       ] [       biHeight      ]
+/*0x20*/0x00,0x00,0xff,0xff,    0xff,0xff,0x00,0x00,    0x00,0x00,0x00,0x00,    0x00,0x00,0x00,0x00,
+//                [     biSizeImage     ]
+/*0x30*/0x00,0x00,0x00,0x00,    0x00,0x00
     };
 
-    BMP24bits(LL x,LL y){
+    BMPrgb24(LL x,LL y){
         width=x;
         height=y;
 
         size=width*height;
-        size_o=size+(size<<1);
+        _size=size+(size<<1);
 
-        const LL size_data=(width+(width<<1)+(width&3))*height;
+        const LL biSizeImage=_size+(width&3)*height;
         const LL xy=y<<(LL)32|x;
-        const LL size_file=size_data+size_head;
+        const LL bfSize=biSizeImage+BMPRGB24_bfOffBits;
 
-        _sethead(size_file,0x02,0x05);
-        _sethead(xy,0x12,0x19);
-        _sethead(size_data,0x22,0x25);
+        auto _sethead=[this](LL reg,int l,int r){while(l<r)this->head[l++]=reg&0xff,reg>>=8;};
 
-        alloc();
-        white();
+        // inline void _sethead(LL reg,int l,int r){
+        //     for(int i=l;i<r;i++){
+        //         head[i]=reg&0xff;
+        //         reg>>=8;
+        //     }
+        // }
+
+        _sethead(bfSize,0x02,0x06);
+        _sethead(xy,0x12,0x1a);
+        _sethead(biSizeImage,0x22,0x26);
+
+        renew();
     }
 
-    BMP24bits(std::string p){
-        FILE*f=fopen(p.c_str(),"rb");
-        code=read(f);
+    BMPrgb24(std::string path){
+        FILE*f=fopen(path.c_str(),"rb");
+        const int code=read(f);
+        if(code)printf("Warning: %d \"%s\"\n",code,path.c_str());
         fclose(f);
-        if(code)printf("ERROR %d \"%s\"\n",code,p.c_str());
     }
 
-    ~BMP24bits(){
-        delete[]o;
-        delete[]tag;
+    ~BMPrgb24(){
+        del();
     }
     
-    inline void alloc(){
-        o=(B*)malloc(size_o);
+    inline void del(){
+        if(o)delete[]o;
+        if(tag)delete[]tag;
+    }
+
+    inline void renew(){
+        del();
+        o=(B*)malloc(_size);
+        white();
         tag=(int*)malloc(size<<2);
         memset(tag,0,size<<2);
     }
-    inline void white(){memset(o,0xff,size_o);}
-    inline void black(){memset(o,0x00,size_o);}
+    inline void white(){memset(o,0xff,_size);}
+    inline void black(){memset(o,0x00,_size);}
 
     inline int read(FILE*f){
-        if(fread(head,1,0x36,f)^0x36)return ERR_SIZE_1;
-        p=head;
+        if(fread(head,1,BMPRGB24_bfOffBits,f)^BMPRGB24_bfOffBits)
+            throw "BMPrgb24.read: file.size < 0x36";
+        B*_p=head;
+        // inline int _n(){return *_p++;}
+        // inline int _n2(){return _n()|_n()<<8;}
+        // inline int _n4(){return _n2()|_n2()<<16;}
+        auto _n=[&_p](){return *_p++;};
+        auto _n2=[&_n](){return _n()|_n()<<8;};
+        auto _n4=[&_n2](){return _n2()|_n2()<<16;};
 
-        if(_nc()^'B')return ERR_NOT_BMP_1;
-        if(_nc()^'M')return ERR_NOT_BMP_2;
-        // const "BM"
+        if(_n2()^BMP_bfType)
+            throw "BMPrgb24.read: bfType!='BM' (const)";
+        // 0x00:0x01
+        // const 'BM'
 
-        const int size_file=_int4();
+        const int bfSize=_n4();
+        // 0x02:0x06
 
-        if(_int4())return ERR_OTHER_DATA_1;
+        if(_n4()^BMP_bfReserved)
+            throw "BMPrgb24.read: bfReserved!=0 (const)";
+        // 0x06:0x0A
         // const 0x00
 
-        if(_int4()^size_head)return ERR_NOT_24BIT_1;
-        // head size 0x36 bits
+        if(_n4()^BMPRGB24_bfOffBits)
+            throw "BMPrgb24.read: bfOffBits!=0x36 ((const))";
+        // 0x0A:0x0E
+        // For 24-rgb-bpps, bfOffBitshead = 0x36 (bit)
         
-        if(_int4()^0x28)return ERR_NOT_24BIT_1;
-        // head 2 size 0x36 bits
+        if(_n4()^BMPRGB24_biSize)
+            throw "BMPrgb24.read: biSize!=0x28 ((const))";
+        // 0x0E:0x12
+        // For 24-rgb-bpps, biSize = 0x28 (bit)
 
-        width=_int4();
-        height=_int4();
+        width=_n4();
+        // 0x12:0x16
+        height=_n4();
+        // 0x16:0x1A
 
         size=width*height;
-        size_o=size+(size<<1);
+        _size=size+(size<<1);
 
         const int width3=width+(width<<1);
         const int mo=width&3;
 
-        if(size_file^((width3+mo)*height+0x36))return ERR_NOT_24BIT_2;
-        // 4B
+        if(bfSize^((width3+mo)*height+BMPRGB24_bfOffBits))
+            throw "BMPrgb24.read: bfSize!=biWidth*biHeight*3+bfOffBits";
 
-        if(_int4()^0x180001)return ERR_OTHER_DATA_2;
-        // const 0x00180001
+        if(_n2()^BMP_biPlanes)
+            throw "BMPrgb24.read: biPlanes!=0x01 (const)";
+        // 0x1A:0x1B
+        if(_n2()^BMPRGB24_biBitCount)
+            throw "BMPrgb24.read: biBitCount!=0x18 ((const))";
+        // 0x1C:0x1D
 
-        if(_int4())return ERR_NOT_BMP_2;
+        if(_n4()^BMPRGB_biCompression)
+            throw "BMPrgb24.read: biCompression!=0x00 ((const))";
+        // 0x1E:0x22
         // const compress 0x00
 
-        if(size_file^(_int4()+0x36))return ERR_NOT_24BIT_3;
-        // img_size and file_size
+        if(bfSize^(_n4()+BMPRGB24_bfOffBits))
+            throw "BMPrgb24.read: bfSize!=biSizeImage+bfOffBits";
+        // 0x22:0x26
 
-        _int4();
-        _int4();
-        // paint=0x1d87 ffmpeg=0x0000 
-        if(_int4())return ERR_OTHER_DATA_3;
-        // const
+        if(_n4()^BMPRGB_biXPelsPerMeter)
+            throw "BMPrgb24.read: biXPelsPerMeter!=0x00 ((const))";
+        // 0x26:0x2A
+        // const 0x00
+        if(_n4()^BMPRGB_biYPelsPerMeter)
+            throw "BMPrgb24.read: biYPelsPerMeter!=0x00 ((const))";
+        // 0x2A:0x2E
+        // const 0x00
+        /*
+        bug(?):
+            biYPelsPerMeter = 0x1d87
+            In Windows Paint
+            Cannot be reproduced
+        */
 
-        p=(B*)malloc(4);
-        alloc();
+        if(_n4()^BMPRGB_biClrUsed)
+            throw "BMPrgb24.read: biClrUsed!=0x00 ((const))";
+        // 0x2E:0x32
+        // const 0x00
+
+        if(_n4()^BMPRGB_biClrImportant)
+            throw "BMPrgb24.read: biClrImportant!=0x00 ((const))";
+        // 0x32:0x36
+
+        _p=(B*)malloc(4);
+        renew();
         for(int i=0;i<height;i++){
-            if(fread(o+i*width3,1,width3,f)^width3)return ERR_SIZE_2;
-            if(fread(p,1,mo,f)^mo)return ERR_SIZE_2;
+            if(fread(o+i*width3,1,width3,f)^width3)
+                throw "BMPrgb24.read: file.size < bfsize";
+            if(fread(_p,1,mo,f)^mo)
+                throw "BMPrgb24.read: file.size < bfsize";
         }
 
-        if(fread(p,1,1,f))
+        if(fread(_p,1,1,f))
             return 1;
         return 0;
     }
@@ -217,12 +287,12 @@ public:
         FILE*f=fopen((compress?pth+".bmp":pth).c_str(),"wb");
         const int width3=width+(width<<1);
         const int mo=width&3;
-        p=(B*)malloc(4);
-        memset(p,0,4);
-        fwrite(head,1,0x36,f);
+        B*_p=(B*)malloc(4);
+        memset(_p,0,4);
+        fwrite(head,1,BMPRGB24_bfOffBits,f);
         for(int i=0;i<height;i++){
             fwrite(o+i*width3,1,width3,f);
-            fwrite(p,1,mo,f);
+            fwrite(_p,1,mo,f);
         }
         fclose(f);
         if(!compress)return 0;
@@ -233,25 +303,23 @@ public:
     }
 
     inline int getp(int x,const int y=DEFAULT_Y){
-        if(y==DEFAULT_Y){
-            if(x<0||x>=size){
-                // printf("ERROR %d %d\n",x,size);
-                return ERR_SIZE_3;
-            }
-            return x;
-        }else{
+        if(y^DEFAULT_Y){
             if(x<0||y<0||x>=width||y>=height){
-                // printf("ERROR (%d,%d) (%d,%d)\n",x,y,width,height);
-                return ERR_SIZE_3;
+                return -1;
             }
             return x+y*width;
+        }else{
+            if(x<0||x>=size){
+                return -1;
+            }
+            return x;
         }
     }
 
     inline int getag(const int x,const int y=DEFAULT_Y){
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
         return tag[p];
@@ -260,32 +328,35 @@ public:
     inline B getb(const int x,const int y=DEFAULT_Y){
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
+        // o[p*3]
         return o[p+(p<<1)];
     }
     inline B getg(const int x,const int y=DEFAULT_Y){
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
+        // o[p*3+1]
         return o[p+(p<<1|1)];
     }
     inline B getr(const int x,const int y=DEFAULT_Y){
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
+        // o[p*3+2]
         return o[p+((p+1)<<1)];
     }
 
     inline int getpixel(const int x,const int y=DEFAULT_Y){
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
         int p3=p+(p<<1);
@@ -300,17 +371,17 @@ public:
             if(y^DEFAULT_Y){
                 lastag=z;
             }else{
-                throw "BMP24bits.setag: Need 1 or 3 args";
+                throw "BMPrgb24.setag: Need 1 or 3 args";
             }
         }else{
             if(y^DEFAULT_Y){
-                throw "BMP24bits.setag: Need 1 or 3 args";
+                throw "BMPrgb24.setag: Need 1 or 3 args";
             }else{}
         }
 
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
         tag[p]=lastag;
@@ -320,11 +391,11 @@ public:
     inline int setpixel(const int x,const int y=DEFAULT_Y,int rgb=DEFAULT_A){
         if(rgb^DEFAULT_A){
             if(y^DEFAULT_Y){}else{
-                throw "BMP24bits.setpixel: Need 1 or 3 args";
+                throw "BMPrgb24.setpixel: Need 1 or 3 args";
             }
         }else{
             if(y^DEFAULT_Y){
-                throw "BMP24bits.setpixel: Need 1 or 3 args";
+                throw "BMPrgb24.setpixel: Need 1 or 3 args";
             }else{
                 rgb=0x000000;
             }
@@ -332,7 +403,7 @@ public:
 
         const int p=getp(x,y);
         if(p<0){
-            return p;
+            throw p;
         }
 
         const int b=rgb&0xff;
@@ -350,7 +421,7 @@ public:
         const int b=rgb&0xff;
         const int g=(rgb>>8)&0xff;
         const int r=rgb>>16;
-        for(int i=0;i<size_o;){
+        for(int i=0;i<_size;){
             const int c=299*o[i+2]+587*o[i+1]+114*o[i];
             o[i++]=(c*b+127500)/255000;
             o[i++]=(c*g+127500)/255000;
@@ -364,7 +435,7 @@ public:
         const int b=(rgb&0xff)^0xff;
         const int g=((rgb>>8)&0xff)^0xff;
         const int r=(rgb>>16)^0xff;
-        for(int i=0;i<size_o;){
+        for(int i=0;i<_size;){
             const int c=255000-(299*o[i+2]+587*o[i+1]+114*o[i]);
             o[i++]=((c*b+127500)/255000)^0xff;
             o[i++]=((c*g+127500)/255000)^0xff;
@@ -384,17 +455,14 @@ public:
             return wgray(rgb);
     }
 
-
-    // inline int update_max_min(){return linear(0);}
-
     inline int linear(int con=0b111){
-        return linear(con,0x000000,0xffffff);
+        return linear(0x000000,0xffffff,con);
     }
 
-    inline int linear(int con,int rgb_black1,int rgb_white1){
+    inline int linear(int rgb_black1,int rgb_white1,int con=0b111){
         int b_max=0x00,g_max=0x00,r_max=0x00;
         int b_min=0xff,g_min=0xff,r_min=0xff;
-        for(int i=0;i<size_o;){
+        for(int i=0;i<_size;){
             b_max=b_max>o[i]?b_max:o[i];
             b_min=b_min<o[i]?b_min:o[i];
             i++;
@@ -407,7 +475,7 @@ public:
         }
         int _min=r_min<<16|g_min<<8|b_min;
         int _max=r_max<<16|g_max<<8|b_max;
-        return linear(con,rgb_black1,rgb_white1,_min,_max);
+        return linear(_min,_max,rgb_black1,rgb_white1,con);
     }
 
     inline int _linearp(const int _o,const int _black0,const int _white0,const int _lv0,const int _black1,const int _white1,const int _lv1){
@@ -426,7 +494,7 @@ public:
         return (_o-_black0)*_lv1/_lv0+_black1;
     }
 
-    inline int linear(int rgb_black0,int rgb_white0,int rgb_black1,int rgb_white1,int con=7){
+    inline int linear(int rgb_black0,int rgb_white0,int rgb_black1,int rgb_white1,int con=0b111){
         if(!con)return 1;
 
         const int b_black0=rgb_black0&0xff;
@@ -453,7 +521,7 @@ public:
         const int g_lv1=g_white1-g_black1;
         const int r_lv1=r_white1-r_black1;
 
-        for(int i=0;i<size_o;){
+        for(int i=0;i<_size;){
             if(con&1){
                 o[i]=_linearp(o[i],b_black0,b_white0,b_lv0,b_black1,b_white1,b_lv1);
             }
@@ -470,15 +538,15 @@ public:
         return 0;
     }
 
-    inline BMP24bits*resize(LL x,LL y,int f=0){
+    inline BMPrgb24*resize(LL x,LL y,int f=0){
         if(f==0){
             return resize_avg(x,y);
         }
         return this;
     }
 
-    inline BMP24bits*resize_avg(LL x,LL y){
-        BMP24bits*p=new BMP24bits(x,y);
+    inline BMPrgb24*resize_avg(LL x,LL y){
+        BMPrgb24*img=new BMPrgb24(x,y);
         for(int i=0;i<x;i++)for(int j=0;j<y;j++){
             LL r=0,g=0,b=0,check=0;
 
@@ -621,19 +689,18 @@ public:
             r+=r2*v;
 
             if(check^size){
-                printf("ERROR %d %d\n",check,size);
-                exit(0);
+                throw "BMPrgb24.resize_avg: check!=size";
             }
 
-            p->setpixel(p->getp(i,j),argb((r+(size>>1))/size,(g+(size>>1))/size,(b+(size>>1))/size));
+            img->setpixel(img->getp(i,j),argb((r+(size>>1))/size,(g+(size>>1))/size,(b+(size>>1))/size));
         }
-        return p;
+        return img;
     }
 };
 
 inline int distance(int l,int r){
     if(l<0||l>0xffffff||r<0||r>0xffffff)
-        return ERR_NOT_24BIT_1;
+        throw "distance: l or r out of range";
     l^=r;
     return (l>>16)+((l>>8)&0xff)+(l&0xff);
 }

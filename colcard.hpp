@@ -1,5 +1,5 @@
 // code by userElaina
-#include "bmp24bits.hpp"
+#include "bmp.hpp"
 
 #define OUTPUT_DEBUG 1
 #define OUTPUT_PROGRESS 2
@@ -54,9 +54,16 @@ public:
         return 0;
     }
     void show(){
-        for(int w=0;w<8;w++)for(int i=0;i<need;i++){
-            if(num[w][i]<=limit)break;
-            printf("%d %06X %d\n",w+1,col[w][i],num[w][i]);
+        for(int w=0;w<8;w++){
+            if(num[w][0]>limit)
+                printf("Level %d:\n",w+1);
+            else
+                break;
+            for(int i=0;i<need;i++){
+                if(num[w][i]<=limit)break;
+                if(num[w][i]>1)printf("%06X %d\n",col[w][i],num[w][i]);
+                else printf("%06X\n",col[w][i]);
+            }
         }
     }
     void draw(){
@@ -85,23 +92,23 @@ public:
 };
 
 inline void crowd(std::string pth,double limit=0.01,int need=Q_MAX){
+    printf("colcard.crowd(%s,%.2lf,%d)\n",pth.c_str(),limit,need);
     if(OUTPUT&OUTPUT_PROGRESS)printf("Loading...\n");
     std::string s=bmp(pth,"crowd");
-    BMP24bits*p=new BMP24bits(s);
-    check_code(p->code);
+    BMPrgb24*img=new BMPrgb24(s);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Initializing...\n");
     int*inverse=(int*)malloc(1<<29);//1<<1<<24<<2<<2
     memset(inverse,0,1<<29);
     
     if(OUTPUT&OUTPUT_PROGRESS)printf("Analyzing...\n");
-    for(int i=0;i<p->size;i++){
-        inverse[(1<<24|p->getpixel(i))<<2]++;
+    for(int i=0;i<img->size;i++){
+        inverse[(1<<24|img->getpixel(i))<<2]++;
     }
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Sorting...\n");
-    Q*q=new Q(s,p->size,limit,need);
-    free(p);
+    Q*q=new Q(s,img->size,limit,need);
+    free(img);
     for(int w=8;w>0;w--){
         const int _get_tail=(1<<w)-1;
         const int _max=1<<(w+(w<<1)+2);
@@ -142,19 +149,19 @@ inline void crowd(std::string pth,double limit=0.01,int need=Q_MAX){
 }
 
 inline void naive(std::string pth,int needx=4,int needy=4){
+    printf("colcard.naive(%s,%d,%d)\n",pth.c_str(),needx,needy);
     if(OUTPUT&OUTPUT_PROGRESS)printf("Loading...\n");
     const int need=needx*needy;
     if(0>=need||need>=Q_MAX)check_code(ERR_INPUT_SIZE_1);
     std::string s=bmp(pth,needx,needy);
-    BMP24bits*p=new BMP24bits(s);
-    check_code(p->code);
+    BMPrgb24*img=new BMPrgb24(s);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Analyzing...\n");
     Q*q=new Q(s,need,0,need);
-    for(int i=0;i<p->size;i++){
-        q->insert(1,1,p->getpixel(i));
+    for(int i=0;i<img->size;i++){
+        q->insert(1,1,img->getpixel(i));
     }
-    free(p);
+    free(img);
 
     if(OUTPUT&OUTPUT_LIST)q->show();
     if(OUTPUT&OUTPUT_PROGRESS)printf("Saving...\n");
@@ -165,45 +172,45 @@ inline void naive(std::string pth,int needx=4,int needy=4){
 }
 
 inline void line(std::string pth,int dis=96,int onlyline=0,int color=-1){
+    printf("colcard.line(%s,%d,%d,%d)\n",pth.c_str(),dis,onlyline,color);
     if(OUTPUT&OUTPUT_PROGRESS)printf("Loading...\n");
     std::string s=bmp(pth);
-    BMP24bits*p=new BMP24bits(s);
-    check_code(p->code);
+    BMPrgb24*img=new BMPrgb24(s);
 
     if(dis>=765){
-        if(color>0)p->wgray(color);
+        if(color>0)img->wgray(color);
         if(OUTPUT&OUTPUT_PROGRESS)printf("Saving...\n");
-        if(OUTPUT&OUTPUT_PIC)p->save(pth+".765"+(onlyline?"_l":"")+".png",1);
+        if(OUTPUT&OUTPUT_PIC)img->save(pth+".765"+(onlyline?"_l":"")+".png",1);
         if(OUTPUT&OUTPUT_PROGRESS)printf("Ending...\n\n");
         return;
     }
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Initializing...\n");
-    int*bfsx=(int*)malloc(p->size<<2);
-    int*bfsy=(int*)malloc(p->size<<2);
-    int*bfsz=(int*)malloc(p->size<<2);
+    int*bfsx=(int*)malloc(img->size<<2);
+    int*bfsy=(int*)malloc(img->size<<2);
+    int*bfsz=(int*)malloc(img->size<<2);
     int t=0,cls=0;
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Analyzing...\n");
     const int delta_x[4]={1,-1,0,0},delta_y[4]={0,0,1,-1};
-    for(int i=0;i<p->height;i++){
-        for(int j=0;j<p->width;j++){
-            if(p->getag(j,i))continue;
-            p->setag(j,i,++cls);
+    for(int i=0;i<img->height;i++){
+        for(int j=0;j<img->width;j++){
+            if(img->getag(j,i))continue;
+            img->setag(j,i,++cls);
             bfsx[t]=j;
             bfsy[t]=i;
-            bfsz[t]=p->getpixel(j,i);
+            bfsz[t]=img->getpixel(j,i);
             t++;
             for(int k=t-1;k<t;k++){
                 const int x=bfsx[k],y=bfsy[k],z=bfsz[k];
                 for(int delta_z=0;delta_z<4;delta_z++){
                     const int xx=x+delta_x[delta_z],yy=y+delta_y[delta_z];
-                    const int col=p->getpixel(xx,yy);
-                    if(col<0||distance(z,col)>dis)continue;
-                    if(OUTPUT&OUTPUT_DEBUG)if(xx<0||xx>=p->width||yy<0||yy>=p->height)
-                        printf("%d %d\n",xx,yy);
-                    if(p->getag(xx,yy))continue;
-                    p->setag(xx,yy,cls);
+                    const int pp=img->getp(xx,yy);
+                    if(pp<0)continue;
+                    const int col=img->getpixel(pp);
+                    if(distance(z,col)>dis)continue;
+                    if(img->getag(pp))continue;
+                    img->setag(xx,yy,cls);
                     bfsx[t]=xx;
                     bfsy[t]=yy;
                     bfsz[t]=col;
@@ -214,41 +221,42 @@ inline void line(std::string pth,int dis=96,int onlyline=0,int color=-1){
     }
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Drawing...\n");
-    for(int i=0;i<p->height;i++){
-        for(int j=0;j<p->width;j++){
+    for(int i=0;i<img->height;i++){
+        for(int j=0;j<img->width;j++){
             int flg=0;
-            const int tg=p->getag(j,i);
+            const int tg=img->getag(j,i);
             for(int delta_z=0;delta_z<4;delta_z++){
-                const int tg2=p->getag(j+delta_x[delta_z],i+delta_y[delta_z]);
-                if(tg2<0)continue;
+                const int pp=img->getp(j+delta_x[delta_z],i+delta_y[delta_z]);
+                if(pp<0)continue;
+                const int tg2=img->getag(pp);
                 if(tg^tg2)flg++;
             }
             if(flg){
-                p->setpixel(j,i,0x000000);
+                img->setpixel(j,i,0x000000);
             }else if(onlyline){
-                p->setpixel(j,i,0xffffff);
+                img->setpixel(j,i,0xffffff);
             }
         }
     }
-    if(color>0)p->wgray(color);
+    if(color>0)img->wgray(color);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Saving...\n");
-    if(OUTPUT&OUTPUT_PIC)p->save(pth+"."+std::to_string(dis)+(onlyline?"_l":"")+".png",1);
+    if(OUTPUT&OUTPUT_PIC)img->save(pth+"."+std::to_string(dis)+(onlyline?"_l":"")+".png",1);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Ending...\n\n");
 }
 
-inline void linear(std::string pth,int rgb_black1,int rgb_white1,int rgb_black0,int rgb_white0,int con=7){
+inline void linear(std::string pth,int rgb_black0,int rgb_white0,int rgb_black1,int rgb_white1,int con=0b111){
+    printf("colcard.linear(%s,%x,%x,%x,%x,%d)\n",pth.c_str(),rgb_black0,rgb_white0,rgb_black1,rgb_white1,con);
     if(OUTPUT&OUTPUT_PROGRESS)printf("Loading...\n");
     std::string s=bmp(pth);
-    BMP24bits*p=new BMP24bits(s);
-    check_code(p->code);
+    BMPrgb24*img=new BMPrgb24(s);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Drawing...\n");
-    p->linear(rgb_black1,rgb_white1,rgb_black0,rgb_white0,con);
+    img->linear(rgb_black0,rgb_white0,rgb_black1,rgb_white1,con);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Saving...\n");
-    if(OUTPUT&OUTPUT_PIC)p->save(pth+"_linear.png",1);
+    if(OUTPUT&OUTPUT_PIC)img->save(pth+"_linear.png",1);
 
     if(OUTPUT&OUTPUT_PROGRESS)printf("Ending...\n\n");
 }

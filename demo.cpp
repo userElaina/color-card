@@ -1,10 +1,9 @@
-#include "color_card.hpp"
+#include "colcard.hpp"
 
 int main(int argc,char **argv){
     OUTPUT=OUTPUT_DEBUG|OUTPUT_PROGRESS|OUTPUT_LIST|OUTPUT_HTML|OUTPUT_PIC;
     try{
         crowd("./example/87011701_p0.jpg");
-        crowd("./example/1 1.bmp");
         naive("./example/87011701_p0.jpg");
         naive("./example/87011701_p0.jpg",7,8);
         line("./example/87011701_p0.jpg",192);
@@ -13,6 +12,6 @@ int main(int argc,char **argv){
         line("./example/douban.jpg",9,1);
         linear("./example/kuaiche.jpg",0xfffffe,0xffffff,0x000000,0xffffff);
     }catch(const char *s){
-        puts(s);
+        throw s;
     }
 }
