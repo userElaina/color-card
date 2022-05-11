@@ -4,3 +4,4 @@
 [submodule "bmp"]
     path = bmp
     url = git@github.com:userElaina/bmp.git
+    branch = main
