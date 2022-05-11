@@ -16,6 +16,49 @@
 
 将图片先缩小再处理就很不必要了, 因为 `C++` 跑得~~比香港记者还~~快.
 
+
+### Environmental Dependence
+
+#### Compile
+
+Usually, as long as you can compile the CPP.
+
+#### Run
+
+`ffmpeg` (Include `ffmpeg` `ffprobe` `ffplay`).
+
+##### Windows
+
+[FFmpeg](https://github.com/BtbN/FFmpeg-Builds/releases/tag/latest)
+
+##### Ubuntu / Debian
+
+```sh
+sudo apt update
+sudo apt install ffmpeg
+```
+
+##### CentOS / RedHat
+
+```sh
+sudo yum update
+sudo yum install ffmpeg
+```
+
+##### Arch Linux
+
+```sh
+sudo pacman -Syu ffmpeg
+```
+
+
+### Clone
+
+```sh
+git clone --recurse-submodules --remote-submodule git@github.com:userElaina/color-card.git
+```
+
+
 ### Function
 
 #### Start
