@@ -3,6 +3,7 @@
 int main(int argc,char **argv){
     OUTPUT=OUTPUT_DEBUG|OUTPUT_PROGRESS|OUTPUT_LIST|OUTPUT_HTML|OUTPUT_PIC;
     try{
+        crowd("./example/100154449_p0.jpg");
         crowd("./example/87011701_p0.jpg");
         naive("./example/87011701_p0.jpg");
         naive("./example/87011701_p0.jpg",7,8);
