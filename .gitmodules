@@ -1,7 +1,7 @@
 [submodule "cmdline"]
     path = cmdline
-    url = git@github.com:tanakh/cmdline.git
+    url = https://github.com/tanakh/cmdline.git
 [submodule "bmp"]
     path = bmp
-    url = git@github.com:userElaina/bmp.git
+    url = https://github.com/userElaina/bmp.git
     branch = main
